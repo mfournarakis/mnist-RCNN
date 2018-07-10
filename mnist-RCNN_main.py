@@ -167,25 +167,6 @@ def rotation_test(model, device, test_loader):
     return error
 
 
-def save_images(args,images, epoch, nrow=None):
-    """Save the images in a grid format
-
-    Args:
-        images: array of shape [N,1,h,w], rgb=1 or 3
-    """
-    if nrow == None:
-        nrow = int(np.floor(np.sqrt(images.size(0))))
-
-    img = torchvision.utils.make_grid(images, nrow=nrow, normalize=True).numpy()
-    img = np.transpose(img, (1,2,0))
-
-    plt.figure()
-    plt.imshow(img)
-    path = "./output_lambda_{}".format(args.regulariser)
-    plt.savefig(path+"/epoch{:04d}".format(epoch))
-    plt.close()
-
-
 def define_loss(args, x,y):
     """
     Return the loss based on the user's arguments
@@ -214,8 +195,8 @@ def main():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=10, metavar='N',
-                        help='input batch size for reconstruction testing (default: 10,000)')
+    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+                        help='input batch size for reconstruction testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=20, metavar='N',
                         help='number of epochs to train (default: 20)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
