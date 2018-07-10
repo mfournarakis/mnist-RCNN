@@ -112,24 +112,24 @@ def evaluate_model(model, device, data_loader):
     with torch.no_grad():
         for data, targets in data_loader:
             # Reshape data
-            targets, angles = rotate_tensor(data.numpy())
+            data,targets,angles = rotate_tensor(data.numpy()) #angles are relative between data and target (targets =  R * data)
+            data = torch.from_numpy(data).to(device)
             targets = torch.from_numpy(targets).to(device)
             angles = torch.from_numpy(angles).to(device)
             angles = angles.view(angles.size(0), 1)
 
             # Forward passes
-            data = data.to(device)
             f_data=model(data) # [N,2,1,1]
-            f_targets=model(data) #[N,2,1,1]
+            f_targets=model(targets) #[N,2,1,1]
 
-            #Apply rotatin matrix to f_data with feature transformer
+            #Apply rotation matrix to f_data with feature transformer
             f_data_trasformed= feature_transformer(f_data,angles,device)
 
-            #Define Loss
-            forb_distance=torch.nn.PairwiseDistance()
-            loss=(forb_distance(f_data_trasformed.view(-1,2),f_targets.view(-1,2))**2).mean()
+            #Define loss
+            loss=define_loss(args,f_data_trasformed,f_targets)
             break
-    return loss
+
+    return loss.cpu()
 
 
 def rotation_test(model, device, test_loader):
