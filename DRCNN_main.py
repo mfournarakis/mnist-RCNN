@@ -196,15 +196,18 @@ def define_loss(args, x,y):
     if args.loss=='frobenius':
         forb_distance=torch.nn.PairwiseDistance()
         loss=(forb_distance(x.view(-1,2),y.view(-1,2))**2).sum()
-    elif args.loss=='cosine':
+    elif args.loss=='cosine_squared':
         cosine_similarity=nn.CosineSimilarity(dim=2)
         loss=((cosine_similarity(x.view(x.size(0),1,2),y.view(y.size(0),1,2))-1.0)**2).sum()
+    elif args.loss=='cosine_abs':
+        cosine_similarity=nn.CosineSimilarity(dim=2)
+        loss=torch.abs(cosine_similarity(x.view(x.size(0),1,2),y.view(y.size(0),1,2))-1.0).sum()
 
     return loss
 
 def main():
     # Training settings
-    list_of_choices=['frobenius', 'cosine']
+    list_of_choices=['frobenius', 'cosine{store_interval_squared','cosine_abs']
 
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
