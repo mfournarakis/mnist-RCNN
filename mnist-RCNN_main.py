@@ -213,7 +213,7 @@ def main():
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--store-interval', type=int, default=100, metavar='N',
+    parser.add_argument('--store-interval', type=int, default=50, metavar='N',
                         help='how many batches to wait before storing training loss')
     parser.add_argument('--name', type=str, default='',
                         help='name of the run that is added to the output directory')
@@ -325,30 +325,55 @@ def main():
     np.save(path+'/test_loss',test_loss)
     np.save(path+'/rotation_test_loss',rotation_test_loss)
 
+
     plot_learning_curve(args,train_loss,test_loss,rotation_test_loss,path)
 
 
 def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
 
     x_ticks=np.arange(len(training_loss))*args.store_interval*args.batch_size
-    
-    fig, (ax1,ax2)=plt.subplots(2,1,sharex=True)
-    ax1.plot(x_ticks,training_loss,label='Training Loss')
-    ax1.plot(x_ticks,test_loss,label='Test Loss')
-    loss_type=args.loss+' Loss'
-    ax1.set_ylabel(loss_type)
-    ax2.set_xlabel('Training Examples')
-    fig.suptitle('Learning Curves')
-    ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    ax1.legend()
+    with plt.style.context('ggplot'):
+        fig, (ax1,ax2)=plt.subplots(2,1,sharex=True,figsize=(5,5))
+        # #Set gray background
+        # ax1.set_facecolor('#E6E6E6')
+        # ax2.set_facecolor('#E6E6E6')
 
-    ax2.plot(x_ticks,rotation_test_loss,label='Average prediction error')
-    ax2.ylabel('Degrees')
-    fig.tight_layout()
+        #Plot loss
+        ax1.plot(x_ticks,training_loss,label='Training Loss',linewidth=1.25)
+        ax1.plot(x_ticks,test_loss,label='Test Loss',linewidth=1.25)
+        loss_type=args.loss+' Loss'
+        ax1.set_ylabel(loss_type,fontsize=10)
+        
+        ax1.legend()
 
-    path = path+"/learning_curves"
-    fig.savefig(path+'/learning_curves')
-    fig.clf()
+        # #Grid lines
+        # ax2.grid()
+        # ax1.grid()
+
+        ax2.plot(x_ticks,rotation_test_loss,label='Average prediction error',linewidth=1.25,color='g')
+        ax2.set_ylabel('Degrees',fontsize=10)
+        ax2.set_xlabel('Training Examples',fontsize=10)
+        ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        ax2.legend()
+
+
+        #Control colour of ticks
+        ax1.tick_params(colors='gray', direction='out')
+        for tick in ax1.get_xticklabels():
+            tick.set_color('gray')
+        for tick in ax1.get_yticklabels():
+            tick.set_color('gray')
+
+        ax2.tick_params(colors='gray', direction='out')
+        for tick in ax2.get_xticklabels():
+            tick.set_color('gray')
+        for tick in ax2.get_yticklabels():
+            tick.set_color('gray')
+
+        fig.suptitle('Learning Curves')
+        fig.tight_layout(rect=[0, 0.03, 1, 0.98])
+        fig.savefig(path+'/learning_curves')
+        fig.clf()
   
 if __name__ == '__main__':
     main()
