@@ -37,19 +37,19 @@ def rotate_tensor(input,rot_range=np.pi, plot=False):
     """
     #Define offest angle of input
     offset_angles=np.random.rand(input.shape[0])
-    offset_angles=offset_angle.astype(np.float32)
+    offset_angles=offset_angles.astype(np.float32)
 
     #Define relative angle
     relative_angles=rot_range*np.random.rand(input.shape[0])
-    relative_angles=relative_angle.astype(np.float32)
+    relative_angles=relative_angles.astype(np.float32)
 
     outputs1=[]
     outputs2=[]
     for i in range(input.shape[0]):
-        outputs1 = rotate(input[i,...], 180*offset_angles[i]/np.pi, axes=(1,2), reshape=False)
-        outputs2 = rotate(input[i,...], 180*(offset_angles[i]+relative_angles[i])/np.pi, axes=(1,2), reshape=False)
-        outputs1.append(outputs1)
-        outputs2.append(outputs2)
+        output1 = rotate(input[i,...], 180*offset_angles[i]/np.pi, axes=(1,2), reshape=False)
+        output2 = rotate(input[i,...], 180*(offset_angles[i]+relative_angles[i])/np.pi, axes=(1,2), reshape=False)
+        outputs1.append(output1)
+        outputs2.append(output2)
 
     outputs1=np.stack(outputs1, 0)
     outputs2=np.stack(outputs2, 0)
@@ -104,7 +104,7 @@ def save_model(args,model):
 
 
 
-def evaluate_model(model, device, data_loader):
+def evaluate_model(args,model, device, data_loader):
     """
     Evaluate loss in subsample of data_loader
     """
@@ -132,7 +132,7 @@ def evaluate_model(model, device, data_loader):
     return loss.cpu()
 
 
-def rotation_test(model, device, test_loader):
+def rotation_test(args,model, device, test_loader):
     """
     Test how well the eoncoder discrimates angles
     return the average error in degrees
@@ -179,10 +179,14 @@ def define_loss(args, x,y):
     if args.loss=='frobenius':
         forb_distance=torch.nn.PairwiseDistance()
         loss=(forb_distance(x.view(-1,2),y.view(-1,2))**2).sum()
+
     elif args.loss=='cosine_squared':
+
         cosine_similarity=nn.CosineSimilarity(dim=2)
         loss=((cosine_similarity(x.view(x.size(0),1,2),y.view(y.size(0),1,2))-1.0)**2).sum()
+
     elif args.loss=='cosine_abs':
+
         cosine_similarity=nn.CosineSimilarity(dim=2)
         loss=torch.abs(cosine_similarity(x.view(x.size(0),1,2),y.view(y.size(0),1,2))-1.0).sum()
 
@@ -243,7 +247,7 @@ def main():
         datasets.MNIST('../data', train=False, transform=transforms.Compose([
                            transforms.ToTensor()
                        ])),
-        batch_size=args.test_batch_size, shuffle=True, **kwfargs)
+        batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
     train_loader_eval = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=True, transform=transforms.Compose([
@@ -300,13 +304,13 @@ def main():
             #Store training and test loss
             if batch_idx % args.store_interval==0:
                 #Train Lossq
-                train_loss.append(evaluate_model(model, device, train_loader_eval))
+                train_loss.append(evaluate_model(args,model, device, train_loader_eval))
 
                 #Test Loss
-                test_loss.append(evaluate_model(model, device, test_loader))
+                test_loss.append(evaluate_model(args,model, device, test_loader))
 
-                #Rotation loss
-                rotation_test_loss.append(rotation_test(model, device, test_loader))
+                #Rotation loss in trainign set
+                rotation_test_loss.append(rotation_test(args,model, device, train_loader_eval))
 
 
     #Save model
@@ -330,14 +334,15 @@ def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
     plt.subplot(121)
     plt.plot(x_ticks,training_loss,label='Training Loss')
     plt.plot(x_ticks,test_loss,label='Test Loss')
-    plt.ylabel('Loss')
+    loss_type=args.loss+' Loss'
+    plt.ylabel(loss_type)
     plt.xlabel('Training Examples')
     plt.title('Learning Curves')
     plt.legend()
 
     plt.subplot(122)
     plt.plot(x_ticks,rotation_test_loss,label='Test Cosine Loss')
-    plt.title('Cosine Test Loss')
+    plt.title('Average error in degrees over {} trainign examples'.format(args.test_batch_size))
     plt.xlabel('Training Examples')
 
     path = path+"/learning_curves"
