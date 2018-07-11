@@ -125,7 +125,7 @@ def evaluate_model(args,model, device, data_loader):
             #Apply rotation matrix to f_data with feature transformer
             f_data_trasformed= feature_transformer(f_data,angles,device)
 
-            #import ipdb; ipdb.set_trace()
+            import ipdb; ipdb.set_trace()
 
             #Define loss
             loss=define_loss(args,f_data_trasformed,f_targets)
@@ -196,7 +196,7 @@ def define_loss(args, x,y):
 
 def main():
     # Training settings
-    list_of_choices=['frobenius', 'cosine{store_interval_squared','cosine_abs']
+    list_of_choices=['frobenius', 'cosine_squared','cosine_abs']
 
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -259,6 +259,7 @@ def main():
 
     # Init model and optimizer
     model = Encoder(device).to(device)
+    print(model)
   
     #Initialise weights
     model.apply(weights_init)
