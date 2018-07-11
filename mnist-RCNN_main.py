@@ -333,7 +333,6 @@ def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
     x_ticks=np.arange(len(training_loss))*args.store_interval*args.batch_size
     
     fig, (ax1,ax2)=plt.subplots(2,1,sharex=True)
-    plt.subplot(121)
     ax1.plot(x_ticks,training_loss,label='Training Loss')
     ax1.plot(x_ticks,test_loss,label='Test Loss')
     loss_type=args.loss+' Loss'
@@ -343,17 +342,13 @@ def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
     ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax1.legend()
 
-    plt.subplot(122)
-    plt.plot(x_ticks,rotation_test_loss,label='Test Cosine Loss')
-    plt.title('Average error in degrees over {} trainign examples'.format(args.test_batch_size),)
-    plt.xlabel('Training Examples')
-    plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    plt.ylabel('Degrees')
-    plt.tight_layout()
+    ax2.plot(x_ticks,rotation_test_loss,label='Average prediction error')
+    ax2.ylabel('Degrees')
+    fig.tight_layout()
 
     path = path+"/learning_curves"
-    plt.savefig(path)
-    plt.close()
+    fig.savefig(path+'/learning_curves')
+    fig.clf()
   
 if __name__ == '__main__':
     main()
