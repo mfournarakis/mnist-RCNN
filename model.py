@@ -47,7 +47,7 @@ class Encoder(nn.Module):
             nn.RReLU(),
             #9th Conv Lyaer
             nn.Conv2d(192,2,1),
-            nn.Sigmoid()
+            #nn.Sigmoid()
             )
     def forward(self,x):
          return self.encoder(x)

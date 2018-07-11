@@ -36,7 +36,7 @@ def rotate_tensor(input,rot_range=np.pi, plot=False):
         relative angel [N,1] relative angle between outputs1 and outputs 2 in radians
     """
     #Define offest angle of input
-    offset_angles=np.random.rand(input.shape[0])
+    offset_angles=np.pi*np.random.rand(input.shape[0])
     offset_angles=offset_angles.astype(np.float32)
 
     #Define relative angle
@@ -124,6 +124,8 @@ def evaluate_model(args,model, device, data_loader):
 
             #Apply rotation matrix to f_data with feature transformer
             f_data_trasformed= feature_transformer(f_data,angles,device)
+
+            #import ipdb; ipdb.set_trace()
 
             #Define loss
             loss=define_loss(args,f_data_trasformed,f_targets)
@@ -338,12 +340,16 @@ def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
     plt.ylabel(loss_type)
     plt.xlabel('Training Examples')
     plt.title('Learning Curves')
+    plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     plt.legend()
 
     plt.subplot(122)
     plt.plot(x_ticks,rotation_test_loss,label='Test Cosine Loss')
     plt.title('Average error in degrees over {} trainign examples'.format(args.test_batch_size))
     plt.xlabel('Training Examples')
+    plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    plt.ylabel('Degrees')
+    plt.tight_layout()
 
     path = path+"/learning_curves"
     plt.savefig(path)
