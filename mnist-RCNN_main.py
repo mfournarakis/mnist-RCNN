@@ -125,8 +125,6 @@ def evaluate_model(args,model, device, data_loader):
             #Apply rotation matrix to f_data with feature transformer
             f_data_trasformed= feature_transformer(f_data,angles,device)
 
-            import ipdb; ipdb.set_trace()
-
             #Define loss
             loss=define_loss(args,f_data_trasformed,f_targets)
             break
@@ -163,7 +161,7 @@ def rotation_test(args,model, device, test_loader):
 
             predicted_angle=(torch.acos(predicted_cosine)).cpu()
 
-            error=abs(predicted_angle-angles).mean()*180/np.pi
+            error=abs(predicted_angle-angles.cpu()).mean()*180/np.pi
             break
 
     return error
@@ -333,20 +331,21 @@ def main():
 def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
 
     x_ticks=np.arange(len(training_loss))*args.store_interval*args.batch_size
-
+    
+    fig, (ax1,ax2)=plt.subplots(2,1,sharex=True)
     plt.subplot(121)
-    plt.plot(x_ticks,training_loss,label='Training Loss')
-    plt.plot(x_ticks,test_loss,label='Test Loss')
+    ax1.plot(x_ticks,training_loss,label='Training Loss')
+    ax1.plot(x_ticks,test_loss,label='Test Loss')
     loss_type=args.loss+' Loss'
-    plt.ylabel(loss_type)
-    plt.xlabel('Training Examples')
-    plt.title('Learning Curves')
-    plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    plt.legend()
+    ax1.set_ylabel(loss_type)
+    ax2.set_xlabel('Training Examples')
+    fig.suptitle('Learning Curves')
+    ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    ax1.legend()
 
     plt.subplot(122)
     plt.plot(x_ticks,rotation_test_loss,label='Test Cosine Loss')
-    plt.title('Average error in degrees over {} trainign examples'.format(args.test_batch_size))
+    plt.title('Average error in degrees over {} trainign examples'.format(args.test_batch_size),)
     plt.xlabel('Training Examples')
     plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     plt.ylabel('Degrees')
