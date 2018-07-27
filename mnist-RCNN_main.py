@@ -183,7 +183,11 @@ def define_loss(args, x,y):
 
     if args.loss=='frobenius':
         forb_distance=torch.nn.PairwiseDistance()
-        loss=(forb_distance(x.view(-1,2),y.view(-1,2))**2).sum()
+        x_polar=x.view(-1,2)
+        x_polar=x/x.norm(p=2,dim=1)
+        y_polar=y.view(-1,2)
+        y_polar=y/y.norm(p=2,dim=1)
+        loss=(forb_distance(x_polar,y_polar)**2).sum()
 
     elif args.loss=='cosine_squared':
 
