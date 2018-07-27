@@ -11,7 +11,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 
-from matplotlib import pyplot as plt
+import matplotlib
+from scipy.ndimage.interpolation import rotate
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 from scipy.ndimage.interpolation import rotate
 from torchvision import datasets, transforms
 
@@ -23,7 +26,7 @@ def weights_init(m):
          nn.init.xavier_normal_(m.weight)
 
 
-def rotate_tensor(input,init_rot_range,relative_rot_range,§§ plot=False):
+def rotate_tensor(input,init_rot_range,relative_rot_range, plot=False):
     """
     Rotate the image
     Args:
@@ -114,11 +117,11 @@ def evaluate_model(args,model, device, data_loader):
     with torch.no_grad():
         for data, targets in data_loader:
             # Reshape data
-            data,targets,angles = rotate_tensor(data.numpy()) #angles are relative between data and target (targets =  R * data)
-            data = torch.from_numpy(data).to(device)
+            data,targets,angles = rotate_tensor(data.numpy(),args.init_rot_range, args.relative_rot_range)
             targets = torch.from_numpy(targets).to(device)
             angles = torch.from_numpy(angles).to(device)
             angles = angles.view(angles.size(0), 1)
+            data = torch.from_numpy(data).to(device)
 
             # Forward passes
             f_data=model(data) # [N,2,1,1]
@@ -143,7 +146,7 @@ def rotation_test(args,model, device, test_loader):
     with torch.no_grad():
         for data, targets in test_loader:
             ## Reshape data
-            data,targets,angles = rotate_tensor(data.numpy()) #angles are relative between data and target (targets =  R * data)
+            data,targets,angles = rotate_tensor(data.numpy(),args.init_rot_range, args.relative_rot_range)
             data = torch.from_numpy(data).to(device)
             targets = torch.from_numpy(targets).to(device)
             angles = torch.from_numpy(angles).to(device)
@@ -264,8 +267,7 @@ def main():
 
     # Init model and optimizer
     model = Encoder(device).to(device)
-    print(model)
-  
+
     #Initialise weights
     model.apply(weights_init)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
