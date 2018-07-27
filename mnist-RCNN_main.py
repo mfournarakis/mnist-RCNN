@@ -23,25 +23,27 @@ def weights_init(m):
          nn.init.xavier_normal_(m.weight)
 
 
-def rotate_tensor(input,rot_range=np.pi, plot=False):
+def rotate_tensor(input,init_rot_range,relative_rot_range,§§ plot=False):
     """
     Rotate the image
     Args:
         input: [N,c,h,w] **numpy** tensor
-        rot_range: (scalar) the range of relative rotations
-        plot: (flag)    plot the original and rotated digits
+        init_rot_range:     (scalar) the range of ground truth rotation
+        relative_rot_range: (scalar) the range of relative rotations
+        plot: (flag)         plot the original and rotated digits
     Returns:
         outputs1: [N,c,h,w]  input rotated by offset angle
         outputs2: [N,c,h,w]  input rotated by offset angle + relative angle [0, rot_range]
-        relative angel [N,1] relative angle between outputs1 and outputs 2 in radians
+        relative angele [N,1] relative angle between outputs1 and outputs 2 in radians
     """
     #Define offest angle of input
-    offset_angles=np.pi*np.random.rand(input.shape[0])
+    offset_angles=init_rot_range*np.random.rand(input.shape[0])
     offset_angles=offset_angles.astype(np.float32)
 
     #Define relative angle
-    relative_angles=rot_range*np.random.rand(input.shape[0])
+    relative_angles=relative_rot_range*np.random.rand(input.shape[0])
     relative_angles=relative_angles.astype(np.float32)
+
 
     outputs1=[]
     outputs2=[]
@@ -220,6 +222,11 @@ def main():
     parser.add_argument("--loss",dest='loss',default='frobenius',
     choices=list_of_choices, help='Decide type of loss, (frobenius) norm, difference of (cosine), (default=forbenius)')
 
+    parser.add_argument('--init-rot-range',type=float, default=0,
+                        help='Upper bound of range in degrees of initial random rotation of digits, (Default=0)')
+    parser.add_argument('--relative-rot-range',type=float, default=180,
+                        help='Upper bound of range in degrees of relative rotation between digits (Default=180)')
+
     
     args = parser.parse_args()
 
@@ -273,7 +280,7 @@ def main():
         for batch_idx, (data, targets) in enumerate(train_loader):
             model.train()
             # Reshape data
-            data,targets,angles = rotate_tensor(data.numpy())
+            data,targets,angles = rotate_tensor(data.numpy(),args.init_rot_range, args.relative_rot_range)
             data = torch.from_numpy(data).to(device)
             targets = torch.from_numpy(targets).to(device)
             angles = torch.from_numpy(angles).to(device)
