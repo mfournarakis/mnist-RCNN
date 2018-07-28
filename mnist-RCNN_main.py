@@ -166,10 +166,13 @@ def rotation_test(args,model, device, test_loader):
 
             predicted_angle=(torch.acos(predicted_cosine)).cpu()
 
-            error=abs(predicted_angle-angles.cpu()).mean()*180/np.pi
+            error=((predicted_angle-angles.cpu())*180/np.pi).numpy()
+
+            abs_mean_error=abs(error).mean()
+            error_std=error.std(ddof=1)
             break
 
-    return error
+    return abs_mean_error,error_std
 
 
 def define_loss(args, x,y):
@@ -209,7 +212,7 @@ def main():
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                        help='input batch size for reconstruction testing (default: 1000)')
+                        help='input batch  rotation test (default: 1000)')
     parser.add_argument('--epochs', type=int, default=20, metavar='N',
                         help='number of epochs to train (default: 20)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
@@ -228,7 +231,6 @@ def main():
                         help='name of the run that is added to the output directory')
     parser.add_argument("--loss",dest='loss',default='frobenius',
     choices=list_of_choices, help='Decide type of loss, (frobenius) norm, difference of (cosine), (default=forbenius)')
-
     parser.add_argument('--init-rot-range',type=float, default=0,
                         help='Upper bound of range in degrees of initial random rotation of digits, (Default=0)')
     parser.add_argument('--relative-rot-range',type=float, default=180,
@@ -237,10 +239,16 @@ def main():
     
     args = parser.parse_args()
 
+    args.init_rot_range=args.init_rot_range*np.pi/180
+    args.relative_rot_range= args.relative_rot_range*np.pi/180
     # Create save path
+
     path = "./output_"+args.name
     if not os.path.exists(path):
         os.makedirs(path)
+
+    sys.stdout.write('Start training\n')
+    sys.stdout.flush()
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -257,12 +265,6 @@ def main():
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
 
-    test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, transform=transforms.Compose([
-                           transforms.ToTensor()
-                       ])),
-        batch_size=args.test_batch_size, shuffle=True, **kwargs)
-
     train_loader_eval = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=True, transform=transforms.Compose([
                            transforms.ToTensor()
@@ -277,12 +279,15 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     #Init losses log
-    rotation_test_loss=[]
+    
+    prediction_mean_error=[] #Average  rotation prediction error in degrees
+    prediction_error_std=[] #Std of error for rotation prediciton
     train_loss=[]
-    test_loss=[]
 
     # Where the magic happens
     for epoch in range(1, args.epochs + 1):
+        sys.stdout.write('Epoch {}/{} \n '.format(epoch,args.epochs))
+        sys.stdout.flush()
         for batch_idx, (data, targets) in enumerate(train_loader):
             model.train()
             # Reshape data
@@ -309,40 +314,40 @@ def main():
             optimizer.step()
 
             #Log progress
-            if batch_idx % args.log_interval == 0:
-                sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\r'
-                    .format(epoch, batch_idx * len(data), len(train_loader.dataset),
-                    100. * batch_idx / len(train_loader), loss))
-                sys.stdout.flush()
+                # if batch_idx % args.log_interval == 0:
+                #     sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\r'
+                #         .format(epoch, batch_idx * len(data), len(train_loader.dataset),
+                #         100. * batch_idx / len(train_loader), loss))
+                #     sys.stdout.flush()
 
             #Store training and test loss
             if batch_idx % args.store_interval==0:
                 #Train Lossq
                 train_loss.append(evaluate_model(args,model, device, train_loader_eval))
 
-                #Test Loss
-                test_loss.append(evaluate_model(args,model, device, test_loader))
-
                 #Rotation loss in trainign set
-                rotation_test_loss.append(rotation_test(args,model, device, train_loader_eval))
+                mean, std=rotation_test(args,model, device, train_loader_eval)
+                prediction_mean_error.append(mean)
+                prediction_error_std.append(std)
+
 
 
     #Save model
     save_model(args,model)
     #Save losses
     train_loss=np.array(train_loss)
-    test_loss=np.array(test_loss)
-    rotation_test_loss=np.array(rotation_test_loss)
+    prediction_mean_error=np.array(prediction_mean_error)
+    prediction_error_std=np.array(prediction_error_std)
 
     np.save(path+'/training_loss',train_loss)
-    np.save(path+'/test_loss',test_loss)
-    np.save(path+'/rotation_test_loss',rotation_test_loss)
+    np.save(path+'/prediction_mean_error',prediction_mean_error)
+    np.save(path+'/prediction_error_std',prediction_error_std)
 
 
-    plot_learning_curve(args,train_loss,test_loss,rotation_test_loss,path)
+    plot_learning_curve(args,train_loss,prediction_mean_error,prediction_error_std,path)
 
 
-def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
+def plot_learning_curve(args,training_loss,average_error,error_std,path):
 
     x_ticks=np.arange(len(training_loss))*args.store_interval*args.batch_size
     with plt.style.context('ggplot'):
@@ -353,7 +358,6 @@ def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
 
         #Plot loss
         ax1.plot(x_ticks,training_loss,label='Training Loss',linewidth=1.25)
-        ax1.plot(x_ticks,test_loss,label='Test Loss',linewidth=1.25)
         loss_type=args.loss+' Loss'
         ax1.set_ylabel(loss_type,fontsize=10)
         
@@ -363,7 +367,10 @@ def plot_learning_curve(args,training_loss,test_loss,rotation_test_loss,path):
         # ax2.grid()
         # ax1.grid()
 
-        ax2.plot(x_ticks,rotation_test_loss,label='Average prediction error',linewidth=1.25,color='g')
+       
+        line,=ax2.plot(x_ticks,average_error,label='Average Abs training error',linewidth=1.25,color='g')
+        ax2.fill_between(x_ticks,average_error-error_std,average_error+error_std,
+            alpha=0.2,facecolor=line.get_color(),edgecolor=line.get_color())
         ax2.set_ylabel('Degrees',fontsize=10)
         ax2.set_xlabel('Training Examples',fontsize=10)
         ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
