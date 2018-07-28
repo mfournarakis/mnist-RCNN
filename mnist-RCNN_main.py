@@ -184,7 +184,7 @@ def define_loss(args, x,y):
         y:  [N,2,1,1]    output of encode model
     """
 
-    if args.loss=='frobenius':
+    if args.loss=='forbenius':
         forb_distance=torch.nn.PairwiseDistance()
         x_polar=x.view(-1,2)
         x_polar=x/x.norm(p=2,dim=1,keepdim=True)
@@ -206,7 +206,7 @@ def define_loss(args, x,y):
 
 def main():
     # Training settings
-    list_of_choices=['frobenius', 'cosine_squared','cosine_abs']
+    list_of_choices=['forbenius', 'cosine_squared','cosine_abs']
 
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -229,8 +229,8 @@ def main():
                         help='how many batches to wait before storing training loss')
     parser.add_argument('--name', type=str, default='',
                         help='name of the run that is added to the output directory')
-    parser.add_argument("--loss",dest='loss',default='frobenius',
-    choices=list_of_choices, help='Decide type of loss, (frobenius) norm, difference of (cosine), (default=forbenius)')
+    parser.add_argument("--loss",dest='loss',default='forbenius',
+    choices=list_of_choices, help='Decide type of loss, (forbenius) norm, difference of (cosine), (default=forbenius)')
     parser.add_argument('--init-rot-range',type=float, default=0,
                         help='Upper bound of range in degrees of initial random rotation of digits, (Default=0)')
     parser.add_argument('--relative-rot-range',type=float, default=180,
