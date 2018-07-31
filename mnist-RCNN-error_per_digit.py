@@ -14,7 +14,6 @@ import struct
 import pandas as pd
 
 from model import Encoder
-from main_penalty_loss import round_even, rotate_tensor
 from matplotlib import pyplot as plt
 from scipy.ndimage.interpolation import rotate
 from torchvision import datasets, transforms
@@ -46,7 +45,8 @@ def main():
     model.load_state_dict(torch.load(filename))
     model=model.cuda()
 
-    data_loaders={digit:DataLoader (MNISTDadataset('./data/',digit), 
+    data_root_file='/home/ubuntu/mnist-interpretable-tranformations/data'
+    data_loaders={digit:DataLoader (MNISTDadataset(data_root_file,digit), 
         batch_size=args.batch_size, shuffle=False, **kwargs) for digit in range(0,10)}
 
     step=5 #degrees step
@@ -187,16 +187,17 @@ def get_metrics(model, data_loader,device, step=5):
             target = torch.from_numpy(target).to(device)
             
             #Get Feature vector for original and tranformed image
+            cosine_similarity=nn.CosineSimilarity(dim=2)
 
-            x=model.nodel(data) #Feature vector of data
-            y=model.model(target) #Feature vector of targets
+            x=model(data) #Feature vector of data
+            y=model(target) #Feature vector of targets
 
             #Compare Angles            
             x=x.view(x.shape[0],1,-1)
             x=x.repeat(1,entries,1)# Repeat each vector "entries" times
-            x=x.view(-1,x.shape[-1])# collapse 3D tensor to 2D tensor
+            x=x.view(-1,1,2)# rearrange vector
             
-            y=y.view(y.shape[0],-1) # collapse 3D tensor to 2D tensor
+            y=y.view(y.shape[0],1,2) # collapse 3D tensor to 2D tensor
             
             ndims=x.shape[1]        # get dimensionality of feature space
             new_batch_size=x.shape[0]   # get augmented batch_size
@@ -208,7 +209,7 @@ def get_metrics(model, data_loader,device, step=5):
 
             predicted_cosine=cosine_similarity(x,y)
             predicted_angle=(torch.acos(predicted_cosine)).cpu()  
-            error=((predicted_angle-angles.cpu())*180/np.pi).numpy()
+            error=predicted_angle.numpy()-(angles.view(-1,1).repeat(batch_size,1).numpy()*180/np.pi)
             #Get the tota
             for i in range(entries):
                 index=np.arange(i,new_batch_size,step=entries)
