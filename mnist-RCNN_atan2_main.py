@@ -12,6 +12,7 @@ import torch.optim as optim
 import torchvision
 import struct
 import pandas as pd
+from tensorboardX import SummaryWriter
 
 import matplotlib
 from scipy.ndimage.interpolation import rotate
@@ -158,8 +159,7 @@ def get_metrics(args,model, data_loader,device, step=5):
     entries=int(total_range/step)
     model.eval()
     errors=np.zeros((entries,len(data_loader.dataset)))
-    
-    
+
     with torch.no_grad():
 
         start_index=0
@@ -477,6 +477,7 @@ def main():
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
+    writer = SummaryWriter(path, comment='Encoder atan2 MNIST')
     # Set up dataloaders
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
@@ -506,6 +507,7 @@ def main():
     train_loss=[]
 
     #Train
+    n_iter=0
     for epoch in range(1, args.epochs + 1):
         sys.stdout.write('Epoch {}/{} \n '.format(epoch,args.epochs))
         sys.stdout.flush()
@@ -536,21 +538,28 @@ def main():
             optimizer.step()
 
             #Log progress
-                # if batch_idx % args.log_interval == 0:
-                #     sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\r'
-                #         .format(epoch, batch_idx * len(data), len(train_loader.dataset),
-                #         100. * batch_idx / len(train_loader), loss))
-                #     sys.stdout.flush()
+            if batch_idx % args.log_interval == 0:
+                sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\r'
+                    .format(epoch, batch_idx * len(data), len(train_loader.dataset),
+                    100. * batch_idx / len(train_loader), loss))
+                sys.stdout.flush()
+
+                writer.add_scalar('Training Loss',loss,n_iter)
 
             #Store training and test loss
             if batch_idx % args.store_interval==0:
-                #Train Lossq
+                #Train Loss
                 train_loss.append(evaluate_model(args,model, device, train_loader_eval))
+
 
                 #Rotation loss in trainign set
                 mean, std=rotation_test(args,model, device, train_loader_eval)
                 prediction_mean_error.append(mean)
+                writer.add_scalar('Mean test error',mean,n_iter)
+
                 prediction_error_std.append(std)
+
+            n_iter+=1
 
 
         save_model(args,model)
