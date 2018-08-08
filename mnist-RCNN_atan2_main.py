@@ -194,8 +194,8 @@ def get_metrics(args,model, data_loader,device, step=5):
             f_targets_y= f_targets[:,1] #Extract y coordinates
             f_targets_x= f_targets[:,0] #Extract x coordinates
 
-            theta_data=torch.atan2(f_data_y,f_data_x).numpy()*180/np.pi #Calculate absotulue angel of vector
-            theta_targets=torch.atan2(f_targets_y,f_targets_x).numpy()*180/np.pi #Calculate absotulue angel of vector
+            theta_data=torch.atan2(f_data_y,f_data_x).cpu().numpy()*180/np.pi #Calculate absotulue angel of vector
+            theta_targets=torch.atan2(f_targets_y,f_targets_x).cpu().numpy()*180/np.pi #Calculate absotulue angel of vector
 
             estimated_angle=theta_targets-theta_data
             estimated_angle=estimated_angle.reshape(-1,1)
@@ -377,8 +377,8 @@ def rotation_test(args,model, device, test_loader):
             f_targets_y= f_targets[:,1] #Extract y coordinates
             f_targets_x= f_targets[:,0] #Extract x coordinates
 
-            theta_data=torch.atan2(f_data_y,f_data_x).numpy()*180/np.pi #Calculate absotulue angel of vector
-            theta_targets=torch.atan2(f_targets_y,f_targets_x).numpy()*180/np.pi #Calculate absotulue angel of vector
+            theta_data=torch.atan2(f_data_y,f_data_x).cpu().numpy()*180/np.pi #Calculate absotulue angel of vector
+            theta_targets=torch.atan2(f_targets_y,f_targets_x).cpu(). numpy()*180/np.pi #Calculate absotulue angel of vector
 
             estimated_angle=theta_targets-theta_data
 
