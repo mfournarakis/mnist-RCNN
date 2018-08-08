@@ -7,10 +7,10 @@ import torch.optim as optim
 import torchvision
 
 class Encoder(nn.Module):
-    def __init__(self, device):
+    def __init__(self,device):
         super(Encoder, self).__init__()
 
-        self.device = device
+        self.device=device
 
         self.encoder=nn.Sequential(
             #1st Conv Layer
@@ -64,7 +64,7 @@ def feature_transformer(input, params,device):
         [N,c] tensor
     """
     # First reshape activations into [N,c/2,2,1] matrices
-    x = input.view(input.size(0),input.size(1)/2,2,1)
+    x = input.view(input.size(0),input.size(1)//2,2,1)
     # Construct the transformation matrix
     sin = torch.sin(params)
     cos = torch.cos(params)
