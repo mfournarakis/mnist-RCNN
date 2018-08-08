@@ -31,9 +31,7 @@ def weights_init(m):
 
 def get_error_per_digit(args, model,device):
 
-    #data_root_file='/home/ubuntu/mnist-interpretable-tranformations/data'
-    data_root_file='/Users/marios/Google Drive/MSc CSML/MSc Project/\
-01_mnist-interpretable-tranformations/02_Autoencoder_rotation/data'
+    data_root_file='/home/ubuntu/mnist-interpretable-tranformations/data'
     data_loaders={digit:DataLoader (MNISTDadataset(data_root_file,digit), 
         batch_size=args.batch_size, shuffle=False) for digit in range(0,10)}
 
