@@ -209,7 +209,7 @@ def get_metrics(model, data_loader,device, step=5):
 
             predicted_cosine=cosine_similarity(x,y)
             predicted_angle=(torch.acos(predicted_cosine)).cpu()  
-            error=predicted_angle.numpy()-(angles.view(-1,1).repeat(batch_size,1).numpy()*180/np.pi)
+            error=(predicted_angle.numpy()-angles.view(-1,1).repeat(batch_size,1).numpy())*180/np.pi
             #Get the tota
             for i in range(entries):
                 index=np.arange(i,new_batch_size,step=entries)
