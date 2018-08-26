@@ -44,7 +44,7 @@ def rotate_tensor(input,init_rot_range,relative_rot_range, plot=False):
     offset_angles=offset_angles.astype(np.float32)
 
     #Define relative angle
-    relative_angles=relative_rot_range*np.random.rand(input.shape[0])
+    relative_angles=relative_rot_range*np.random.uniform(-1,1,input.shape[0])
     relative_angles=relative_angles.astype(np.float32)
 
 
@@ -144,32 +144,35 @@ def rotation_test(args,model, device, test_loader):
     """
     model.eval()
     with torch.no_grad():
-        for data, targets in test_loader:
+        for data,_ in test_loader:
             ## Reshape data
             data,targets,angles = rotate_tensor(data.numpy(),args.init_rot_range, args.relative_rot_range)
             data = torch.from_numpy(data).to(device)
             targets = torch.from_numpy(targets).to(device)
-            angles = torch.from_numpy(angles).to(device)
-            angles = angles.view(angles.size(0), 1)
-
+        
             # Forward passes
             f_data=model(data) # [N,2,1,1]
             f_targets=model(targets) #[N,2,1,1]
 
-            #Get cosine similarity
-            f_data=f_data.view(f_data.size(0),1,2)
-            f_targets=f_targets.view(f_targets.size(0),1,2)
+            f_data=f_data.view(-1,2)  # [N,2]
+            f_targets=f_targets.view(-1,2) #[N,2]
 
-            cosine_similarity=nn.CosineSimilarity(dim=2)
+            f_data_y= f_data[:,1] #Extract y coordinates
+            f_data_x= f_data[:,0] #Extract x coordinates
 
-            predicted_cosine=cosine_similarity(f_data,f_targets)
+            f_targets_y= f_targets[:,1] #Extract y coordinates
+            f_targets_x= f_targets[:,0] #Extract x coordinates
 
-            predicted_angle=(torch.acos(predicted_cosine)).cpu()
+            theta_data=torch.atan2(f_data_y,f_data_x).cpu().numpy()*180/np.pi #Calculate absotulue angel of vector
+            theta_targets=torch.atan2(f_targets_y,f_targets_x).cpu(). numpy()*180/np.pi #Calculate absotulue angel of vector
 
-            error=((predicted_angle-angles.cpu())*180/np.pi).numpy()
+            estimated_angle=theta_targets-theta_data
 
-            abs_mean_error=abs(error).mean()
-            error_std=error.std(ddof=1)
+            error=estimated_angle-angles*180/np.pi
+
+            abs_mean_error=np.nanmean(abs(error))
+
+            error_std=np.nanstd(error,ddof=1)
             break
 
     return abs_mean_error,error_std
@@ -209,7 +212,7 @@ def main():
     list_of_choices=['forbenius', 'cosine_squared','cosine_abs']
 
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                         help='input batch  rotation test (default: 1000)')
@@ -231,13 +234,18 @@ def main():
                         help='name of the run that is added to the output directory')
     parser.add_argument("--loss",dest='loss',default='forbenius',
     choices=list_of_choices, help='Decide type of loss, (forbenius) norm, difference of (cosine), (default=forbenius)')
-    parser.add_argument('--init-rot-range',type=float, default=0,
+    parser.add_argument('--init-rot-range',type=float, default=360,
                         help='Upper bound of range in degrees of initial random rotation of digits, (Default=0)')
-    parser.add_argument('--relative-rot-range',type=float, default=180,
+    parser.add_argument('--relative-rot-range',type=float, default=90,
                         help='Upper bound of range in degrees of relative rotation between digits (Default=180)')
 
     
     args = parser.parse_args()
+
+     #Print arguments
+    for arg in vars(args):
+        sys.stdout.write('{} = {} \n'.format(arg,  getattr(args, arg)))
+        sys.stdout.flush()
 
     args.init_rot_range=args.init_rot_range*np.pi/180
     args.relative_rot_range= args.relative_rot_range*np.pi/180
@@ -314,11 +322,11 @@ def main():
             optimizer.step()
 
             #Log progress
-                # if batch_idx % args.log_interval == 0:
-                #     sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\r'
-                #         .format(epoch, batch_idx * len(data), len(train_loader.dataset),
-                #         100. * batch_idx / len(train_loader), loss))
-                #     sys.stdout.flush()
+            if batch_idx % args.log_interval == 0:
+                sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\r'
+                    .format(epoch, batch_idx * len(data), len(train_loader.dataset),
+                    100. * batch_idx / len(train_loader), loss))
+                sys.stdout.flush()
 
             #Store training and test loss
             if batch_idx % args.store_interval==0:
@@ -326,9 +334,9 @@ def main():
                 train_loss.append(evaluate_model(args,model, device, train_loader_eval))
 
                 #Rotation loss in trainign set
-                mean, std=rotation_test(args,model, device, train_loader_eval)
-                prediction_mean_error.append(mean)
-                prediction_error_std.append(std)
+                #mean, std=rotation_test(args,model, device, train_loader_eval)
+                #prediction_mean_error.append(mean)
+                #prediction_error_std.append(std)
 
 
 
@@ -336,15 +344,15 @@ def main():
     save_model(args,model)
     #Save losses
     train_loss=np.array(train_loss)
-    prediction_mean_error=np.array(prediction_mean_error)
-    prediction_error_std=np.array(prediction_error_std)
+    #prediction_mean_error=np.array(prediction_mean_error)
+    #prediction_error_std=np.array(prediction_error_std)
 
-    np.save(path+'/training_loss',train_loss)
-    np.save(path+'/prediction_mean_error',prediction_mean_error)
-    np.save(path+'/prediction_error_std',prediction_error_std)
+    #np.save(path+'/training_loss',train_loss)
+    #np.save(path+'/prediction_mean_error',prediction_mean_error)
+    #np.save(path+'/prediction_error_std',prediction_error_std)
 
 
-    plot_learning_curve(args,train_loss,prediction_mean_error,prediction_error_std,path)
+    #plot_learning_curve(args,train_loss,prediction_mean_error,prediction_error_std,path)
 
 
 def plot_learning_curve(args,training_loss,average_error,error_std,path):
