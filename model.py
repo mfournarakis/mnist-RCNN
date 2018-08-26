@@ -6,6 +6,54 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 
+class Encoder_Tanh(nn.Module):
+    def __init__(self,device):
+        super(Encoder_Tanh, self).__init__()
+
+        self.device=device
+
+        self.encoder=nn.Sequential(
+            #1st Conv Layer
+            nn.Conv2d(1,24,3),
+            nn.BatchNorm2d(24),
+            nn.RReLU(),
+            #2nd Conv Layer
+            nn.Conv2d(24,24,3),
+            nn.BatchNorm2d(24),
+            nn.RReLU(),
+            #3rd Conv Layer
+            nn.Conv2d(24,48,3,2),
+            nn.BatchNorm2d(48),
+            nn.RReLU(),
+            #4th Conv Layer
+            nn.Conv2d(48,48,3),
+            nn.BatchNorm2d(48),
+            nn.RReLU(),
+            #5th Conv Layer
+            nn.Conv2d(48,96,3),
+            nn.BatchNorm2d(96),
+            nn.RReLU(),
+            #6th Conv Layer
+            nn.Conv2d(96,96,3),
+            nn.BatchNorm2d(96),
+            nn.RReLU(),
+            #7th Conv Layer
+            nn.Conv2d(96,192,3),
+            nn.BatchNorm2d(192),
+            nn.RReLU(),
+            #8th Conv Layer
+            nn.Conv2d(192,192,3),
+            nn.BatchNorm2d(192),
+            nn.RReLU(),
+            #9th Conv Lyaer
+            nn.Conv2d(192,2,1),
+            nn.Tanh()
+            )
+    def forward(self,x):
+         return self.encoder(x)
+
+
+
 class Encoder(nn.Module):
     def __init__(self,device):
         super(Encoder, self).__init__()
@@ -46,8 +94,7 @@ class Encoder(nn.Module):
             nn.BatchNorm2d(192),
             nn.RReLU(),
             #9th Conv Lyaer
-            nn.Conv2d(192,2,1),
-            nn.Tanh()
+            nn.Conv2d(192,2,1)
             )
     def forward(self,x):
          return self.encoder(x)

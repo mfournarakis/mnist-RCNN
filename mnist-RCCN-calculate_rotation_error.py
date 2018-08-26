@@ -13,7 +13,7 @@ import torchvision
 import struct
 import pandas as pd
 
-from model import Encoder
+from model import Encoder, Encoder_Tanh
 from matplotlib import pyplot as plt
 from scipy.ndimage.interpolation import rotate
 from torchvision import datasets, transforms
@@ -34,21 +34,32 @@ def main():
                         help='rotation range for evaluation [-theta, +theta)')
     parser.add_argument('--step', type=float, default=10, metavar='theta',
                         help='rotation step in degrees for evaluation of curves')
+    parser.add_argument('--tanh', action= 'store_true', default=False, 
+                        help='Model with or without tanh (Default=False')
 
     args = parser.parse_args()
 
-    #Load model
-    # path='./../Saved_Models/mnist-RNCC/'
-    path='/home/ubuntu/Saved_Models/'
-    filename=os.path.join(path,args.model_name,'checkpoint.pt')
+    filename=os.path.join(args.model_name,'checkpoint.pt')
 
     use_cuda= torch.cuda.is_available()
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    model=Encoder(device)
-    model.load_state_dict(torch.load(filename))
-    model=model.cuda()
+    if args.tanh: 
+        model=Encoder_Tanh(device)
+        model.load_state_dict(torch.load(filename))
+        model=model.cuda()
+
+        sys.stdout.write("model WITH tanh nonlinearity")
+        sys.stdout.flush()
+    else:
+        model=Encoder(device)
+        model.load_state_dict(torch.load(filename))
+        model=model.cuda()
+
+        sys.stdout.write("model WITHOUT tanh nonlinearity")
+        sys.stdout.flush()
+
 
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=True, download=True,
@@ -225,7 +236,6 @@ def get_metrics(model, data_loader,device,starting_angle,rot_range,step):
             sys.stdout.write("\r%d%% complete" % ((batch_idx * 100)/len(data_loader)))
             sys.stdout.flush()
 
-            break
     
     mean_abs_error=np.nanmean((abs(errors)),axis=1)
     error_std=np.nanstd(errors, axis=1)
