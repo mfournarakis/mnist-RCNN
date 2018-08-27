@@ -80,7 +80,7 @@ def main():
     mean_abs_test_error=pd.DataFrame()
     test_error_std=pd.DataFrame()
 
-    starting_agles=[0 ,90 ,180, 270]
+    starting_agles=[0, 90 ,180, 270]
 
     for starting_angle in starting_agles:
             mean, std=get_metrics(model,train_loader,device,starting_angle,args.rotation_range,args.step)
@@ -188,10 +188,14 @@ def get_metrics(model, data_loader,device,starting_angle,rot_range,step):
         for batch_idx, (data,_) in enumerate(data_loader):
             
             batch_size=data.shape[0]
-            angles = convert_to_convetion(np.arange(-rot_range+starting_angle, +rot_range+starting_angle+step,  step=step))
+            angles = np.arange(-rot_range+starting_angle, +rot_range+starting_angle+step,  step=step)
+            relative_angles=np.arange(-rot_range, +rot_range+step,  step=step)
+        
             #Convert angels to [0,360]
             target = rotate_tensor(data.numpy(),angles)
+            
             data  = rotate_tensor(data.numpy(),[starting_angle])
+        
             
             data= torch.from_numpy(data).to(device)
             target = torch.from_numpy(target).to(device)
@@ -199,7 +203,6 @@ def get_metrics(model, data_loader,device,starting_angle,rot_range,step):
             # Forward passes
             f_data=model(data) # [N,2,1,1]
             f_targets=model(target) #[N,2,1,1]
-
 
             #Repeat original data
             f_data=f_data.view(-1,1,2)  # [N,1,2]
@@ -216,8 +219,6 @@ def get_metrics(model, data_loader,device,starting_angle,rot_range,step):
             f_targets_y= f_targets[:,1] #Extract y coordinates
             f_targets_x= f_targets[:,0] #Extract x coordinates
 
-
-
             theta_data=torch.atan2(f_data_y,f_data_x).cpu().numpy()*180/np.pi #Calculate absotulue angel of vector
             theta_targets=torch.atan2(f_targets_y,f_targets_x).cpu().numpy()*180/np.pi #Calculate absotulue angel of vector
 
@@ -225,7 +226,7 @@ def get_metrics(model, data_loader,device,starting_angle,rot_range,step):
             
             estimated_angle=convert_to_convetion(estimated_angle)
 
-            error=estimated_angle-np.tile(angles,batch_size)
+            error=estimated_angle-np.tile(relative_angles,batch_size)
 
             for i in range(entries):
                 index=np.arange(i,new_batch_size,step=entries)
