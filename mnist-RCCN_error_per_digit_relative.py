@@ -168,7 +168,7 @@ def get_metrics(model, data_loader,device,starting_angle,rot_range,step):
     with torch.no_grad():
 
         start_index=0
-        for batch_idx, (data,_) in enumerate(data_loader):
+        for batch_idx, data in enumerate(data_loader):
             
             batch_size=data.shape[0]
             angles = convert_to_convetion(np.arange(-rot_range+starting_angle, +rot_range+starting_angle+step,  step=step))
