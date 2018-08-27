@@ -182,6 +182,7 @@ def get_metrics(model, data_loader,device,starting_angle,rot_range,step):
             
             data= torch.from_numpy(data).to(device)
             target = torch.from_numpy(target).to(device)
+
             
             # Forward passes
             f_data=model(data) # [N,2,1,1]
