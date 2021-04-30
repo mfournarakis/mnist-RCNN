@@ -90,7 +90,7 @@ qtconsole==4.3.1
 raven==6.1.0
 requests==2.19.1
 requests-oauthlib==0.8.0
-rsa==3.4.2
+rsa==4.7
 s3transfer==0.1.13
 scikit-image==0.13.1
 scikit-learn==0.19.1
